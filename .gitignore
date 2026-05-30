@@ -1,0 +1,69 @@
+# ======================
+# Jar-Qush Tili — .gitignore
+# ======================
+
+# --- Katta audio fayllar (git LFS ishlatilmasa) ---
+data/raw/*.wav
+data/raw/*.mp3
+data/raw/*.flac
+data/raw/*.ogg
+data/processed/
+
+# --- Model og'irliklari (checkpoint'lar) ---
+*.pt
+*.pth
+*.ckpt
+*.pkl
+*.h5
+
+# --- Chiqish fayllar ---
+outputs/spectrograms/
+outputs/embeddings/
+
+# --- TweetyBERT (submodule yoki klon) ---
+# tweety_bert/  ← agar submodule bo'lsa, bu satrni o'chiring
+
+# --- Python ---
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+dist/
+build/
+.eggs/
+*.egg
+
+# --- Virtual muhitlar ---
+.env
+.venv
+env/
+venv/
+ENV/
+jar-env/
+
+# --- Conda ---
+*.conda
+*.tar.bz2
+
+# --- Jupyter ---
+.ipynb_checkpoints/
+*.ipynb_checkpoints
+
+# --- macOS ---
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+
+# --- IDE ---
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# --- Logs ---
+*.log
+logs/
+
+# --- Wandb (agar ishlatilsa) ---
+wandb/

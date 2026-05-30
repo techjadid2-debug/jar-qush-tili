@@ -1,0 +1,67 @@
+name: jar-env
+channels:
+  - conda-forge
+  - defaults
+
+dependencies:
+  # Python versiya
+  - python=3.11
+
+  # Audio ishlov berish
+  - librosa=0.10.2
+  - soundfile>=0.12
+
+  # Ilmiy hisoblash
+  - numpy>=1.24
+  - scipy>=1.11
+  - scikit-learn>=1.3
+
+  # Vizualizatsiya
+  - matplotlib>=3.7
+  - seaborn>=0.12
+
+  # Foydali vositalar
+  - tqdm>=4.66
+  - requests>=2.31
+  - pyyaml>=6.0
+
+  # Jupyter (Kaggle'ga yuborish uchun)
+  - jupyter
+  - ipykernel
+  - ipywidgets
+
+  # pip orqali o'rnatish (Apple Silicon MPS uchun ZARUR)
+  - pip
+  - pip:
+    # PyTorch — MPS backend (Apple M3/M1/M2)
+    # CUDA versiyasi emas, CPU+MPS versiyasi
+    - torch>=2.2.0
+    - torchaudio>=2.2.0
+    - torchvision>=0.17.0
+
+    # Dimensionality reduction (UMAP vizualizatsiya)
+    - umap-learn>=0.5.5
+
+    # MP3 → WAV konvertatsiya (ffmpeg kerak: brew install ffmpeg)
+    - pydub>=0.25.1
+
+    # Ma'lumotlar bilan ishlash
+    - pandas>=2.0
+
+    # Progress va logging
+    - rich>=13.0
+
+    # Zenodo checkpoint yuklab olish uchun
+    - httpx>=0.25
+
+# =====================================================================
+# O'rnatish:
+#   conda env create -f environment.yml
+#   conda activate jar-env
+#
+# MPS tekshirish:
+#   python -c "import torch; print('MPS:', torch.backends.mps.is_available())"
+#
+# ffmpeg (agar o'rnatilmagan bo'lsa):
+#   brew install ffmpeg
+# =====================================================================
