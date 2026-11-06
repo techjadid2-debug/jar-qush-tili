@@ -1,15 +1,24 @@
 """
 dataset_loader.py
 =================
-Xeno-canto API v2 orqali Kanareyka (Serinus canaria) qo'shig'i yozuvlarini
+Xeno-canto API v3 orqali Kanareyka (Serinus canaria) qo'shig'i yozuvlarini
 yuklab olish va MP3 → WAV formatiga o'tkazish skripti.
 
+API v3 uchun xeno-canto.org da ro'yxatdan o'ting va API kalitini oling:
+    https://xeno-canto.org/account
+
+API kalitini .env faylga yozing:
+    XC_API_KEY=sizning_kalitingiz
+
+Yoki to'g'ridan-to'g'ri argument sifatida bering:
+    python dataset_loader.py --key sizning_kalitingiz
+
 Ishlatish:
-    python dataset_loader.py
-    python dataset_loader.py --max 10 --quality A
+    python dataset_loader.py --key YOUR_KEY
+    python dataset_loader.py --key YOUR_KEY --max 10 --quality A
 
 Natija:
-    data/raw/*.wav     — audio fayllar
+    data/raw/*.wav         — audio fayllar
     data/raw/metadata.json — yozuvlar haqida ma'lumot
 """
 
@@ -38,31 +47,42 @@ except ImportError:
 # ─────────────────────────────────────────────
 # SOZLAMALAR
 # ─────────────────────────────────────────────
-XENO_CANTO_API = "https://xeno-canto.org/api/2/recordings"
+XENO_CANTO_API = "https://xeno-canto.org/api/3/recordings"
 RAW_DIR        = Path("data/raw")
 MAX_RETRIES    = 3          # Har bir so'rovda qayta urinish soni
 RETRY_DELAY    = 2.0        # Qayta urinishlar orasidagi kutish (soniya)
 REQUEST_DELAY  = 1.5        # So'rovlar orasidagi kutish (serverni himoya qilish)
 
 
-def fetch_recordings(species: str, quality: str, rec_type: str, max_count: int) -> list[dict]:
+def fetch_recordings(species: str, quality: str, rec_type: str, max_count: int, api_key: str) -> list[dict]:
     """
-    Xeno-canto API'dan yozuvlar ro'yxatini olish.
+    Xeno-canto API v3 dan yozuvlar ro'yxatini olish.
+
+    API v3 o'zgarishlari:
+    - Endpoint: /api/3/recordings
+    - 'key' parametri majburiy
+    - Query format: 'sp:"Serinus canaria"' (tag asosida)
 
     Args:
-        species:   Qush turi (masalan "Serinus canaria")
+        species:   Qush turi ilmiy nomi (masalan "Serinus canaria")
         quality:   Sifat filtri ("A", "B", "C", ...)
         rec_type:  Yozuv turi ("song", "call", ...)
         max_count: Eng ko'pi bilan nechta yozuv olish
+        api_key:   Xeno-canto API kaliti
 
     Returns:
         Yozuvlar ro'yxati (dict'lar)
     """
-    print(f"\n🔍 Xeno-canto'da qidirilmoqda: {species!r} | sifat={quality} | tur={rec_type}")
+    print(f"\n🔍 Xeno-canto v3 da qidirilmoqda: {species!r} | sifat={quality} | tur={rec_type}")
 
-    # So'rov parametrlari
-    query = f'{species} q:{quality} type:{rec_type}'
-    params = {"query": query}
+    # API v3 query format: sp:"Genus species" + q:A + type:song
+    # Ikkita so'zli nomlar qo'shtirnoq ichida bo'lishi shart
+    query = f'sp:"{species}" q:{quality} type:{rec_type}'
+    params = {
+        "query": query,
+        "key":   api_key,
+        "per_page": min(max_count, 100),  # API v3: 50-500 oralig'ida
+    }
 
     # Qayta urinish bilan so'rov yuborish
     for attempt in range(1, MAX_RETRIES + 1):
@@ -156,6 +176,7 @@ def load_dataset(
     rec_type:  str = "song",
     max_count: int = 8,
     keep_mp3:  bool = False,
+    api_key:   str = "",
 ) -> None:
     """
     Asosiy funksiya: Xeno-canto'dan audio yuklab, WAV ga o'tkazib saqlash.
@@ -166,12 +187,26 @@ def load_dataset(
         rec_type:  Yozuv turi
         max_count: Yuklab olish kerak bo'lgan yozuvlar soni
         keep_mp3:  MP3 faylni saqlash (True) yoki o'chirish (False)
+        api_key:   Xeno-canto API v3 kaliti
     """
+    # API key tekshiruvi
+    if not api_key:
+        # .env fayldan yoki muhit o'zgaruvchisidan urinib ko'rish
+        import os
+        api_key = os.environ.get("XC_API_KEY", "")
+    if not api_key:
+        print("❌  API key topilmadi!")
+        print("   Xeno-canto v3 API key talab qiladi.")
+        print("   1. https://xeno-canto.org/account sahifasiga kiring")
+        print("   2. API kalitingizni nusxalang")
+        print("   3. Ishlatish: python dataset_loader.py --key SIZNING_KALITINGIZ")
+        print("   Yoki: export XC_API_KEY=SIZNING_KALITINGIZ")
+        return
     # Papkalarni yaratish
     RAW_DIR.mkdir(parents=True, exist_ok=True)
 
     # API'dan yozuvlar ro'yxatini olish
-    recordings = fetch_recordings(species, quality, rec_type, max_count)
+    recordings = fetch_recordings(species, quality, rec_type, max_count, api_key)
 
     if not recordings:
         print("❌  Yozuvlar topilmadi!")
@@ -287,6 +322,10 @@ if __name__ == "__main__":
         "--keep-mp3", action="store_true",
         help="MP3 fayllarni saqlash (odatda o'chiriladi)"
     )
+    parser.add_argument(
+        "--key", type=str, default="",
+        help="Xeno-canto API v3 kaliti (https://xeno-canto.org/account)"
+    )
 
     args = parser.parse_args()
 
@@ -296,4 +335,5 @@ if __name__ == "__main__":
         rec_type  = args.rec_type,
         max_count = args.max,
         keep_mp3  = args.keep_mp3,
+        api_key   = args.key,
     )

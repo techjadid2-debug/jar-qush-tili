@@ -67,3 +67,6 @@ logs/
 
 # --- Wandb (agar ishlatilsa) ---
 wandb/
+
+# Third-party repo (georgevenven/tweety_bert)
+tweety_bert/
